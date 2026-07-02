@@ -5,7 +5,7 @@ description = "Unofficial Python SDK for the Airwallex API — payouts, FX, glob
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
-authors = [{ name = "Cyrus David Pastelero", email = "claudeuser@pastelero.ph" }]
+authors = [{ name = "Cyrus David Pastelero", email = "cyrus@pastelero.ph" }]
 requires-python = ">=3.9"
 dependencies = [
     "httpx>=0.24.0,<1",

@@ -3,7 +3,7 @@
 ## Reporting a vulnerability
 
 Please do **not** open a public issue for security problems. Email
-**claudeuser@pastelero.ph** with the details, or use GitHub's
+**cyrus@pastelero.ph** with the details, or use GitHub's
 [private vulnerability reporting](https://github.com/Cyvid7-Darus10/airwallex-python/security/advisories/new).
 You should receive a response within 72 hours.
 

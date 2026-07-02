@@ -1,11 +1,15 @@
 # airwallex-python
 
-Unofficial, production-grade Python SDK for the [Airwallex API](https://www.airwallex.com/docs/api) — payouts, FX, balances, global accounts, beneficiaries, deposits, and webhooks.
+**Unofficial** Python SDK for the [Airwallex API](https://www.airwallex.com/docs/api) — payouts, FX, balances, global accounts, beneficiaries, deposits, and webhooks.
 
 [![CI](https://github.com/Cyvid7-Darus10/airwallex-python/actions/workflows/ci.yml/badge.svg)](https://github.com/Cyvid7-Darus10/airwallex-python/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/airwallex)](https://pypi.org/project/airwallex/)
 [![Python](https://img.shields.io/pypi/pyversions/airwallex)](https://pypi.org/project/airwallex/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Status: Beta](https://img.shields.io/badge/status-beta-orange.svg)](#status)
+
+> [!IMPORTANT]
+> This is an **unofficial, community-maintained** library. It is **not** affiliated with, endorsed by, or supported by Airwallex Pty Ltd — "Airwallex" is their trademark, used here only to describe compatibility. The SDK is in **beta**: the public interface may change before v1.0, so pin your version. For vendor-supported tooling, use the [official Node.js SDK](https://www.npmjs.com/package/@airwallex/node-sdk).
 
 Airwallex's only official server-side SDK is Node.js. This library brings the same developer experience to Python:
 
@@ -194,6 +198,15 @@ client = Airwallex(api_version="2024-08-07")  # sets x-api-version on every requ
 
 Payment acceptance (payment intents), issuing, and billing are planned — contributions welcome.
 
+## Status
+
+This SDK is **beta** software:
+
+- The wrapped endpoints are grounded in Airwallex's published API spec and covered by tests, but they have not yet been exercised against every account configuration.
+- Semantic versioning applies: breaking changes only in minor versions while `0.x`, and patch releases never change behavior.
+- Response models tolerate unknown fields, so new Airwallex API versions won't break parsing.
+- Test in the `demo` environment before pointing at production, and pin the version in your dependency file (`airwallex==0.1.0`).
+
 ## Development
 
 ```bash
@@ -205,7 +218,7 @@ uv run mypy             # type-check
 
 ## Disclaimer
 
-This is an unofficial SDK and is not affiliated with or endorsed by Airwallex. Use the [official Node.js SDK](https://www.npmjs.com/package/@airwallex/node-sdk) if you need vendor support.
+This project is an independent, unofficial SDK maintained by the community. It is not affiliated with, endorsed by, sponsored by, or supported by Airwallex Pty Ltd. "Airwallex" and related marks are trademarks of Airwallex Pty Ltd; they are used here solely to indicate API compatibility. This software is provided "as is" under the MIT license — review the [SECURITY policy](SECURITY.md) and test against the demo environment before moving real money. If you need vendor support or SLAs, use the [official Node.js SDK](https://www.npmjs.com/package/@airwallex/node-sdk).
 
 ## License
 
