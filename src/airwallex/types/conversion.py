@@ -35,10 +35,17 @@ class Conversion(AirwallexModel):
 
 
 class RateQuote(AirwallexModel):
-    """An indicative or lockable FX quote (``/api/v1/rates/quote``)."""
+    """An indicative FX rate (``GET /api/v1/fx/rates/current``).
+
+    The live API returns ``rate``; some API versions/endpoints use
+    ``client_rate`` — both are typed.
+    """
 
     currency_pair: Optional[str] = None
+    rate: Optional[float] = None
     client_rate: Optional[float] = None
+    conversion_date: Optional[str] = None
+    created_at: Optional[str] = None
     mid_rate: Optional[float] = None
     dealt_currency: Optional[str] = None
     client_buy_amount: Optional[float] = None
