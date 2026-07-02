@@ -82,6 +82,18 @@ class Transfers(SyncResource):
         """
         return self._client.post(f"{_BASE}/validate", json=payload)
 
+    def confirm_funding(self, transfer_id: str, **payload: Any) -> Transfer:
+        """Confirm funding for a transfer that is awaiting funds.
+
+        Used with transfers created ahead of funding: once the money has
+        arrived (or you choose the funding source), confirming releases the
+        transfer for processing. Pass any funding details documented by
+        Airwallex, e.g. ``funding_source_id=...``.
+        """
+        return Transfer.model_validate(
+            self._client.post(f"{_BASE}/{pid(transfer_id)}/confirm_funding", json=payload or None)
+        )
+
 
 class AsyncTransfers(AsyncResource):
     """Async counterpart of :class:`Transfers`."""
@@ -132,3 +144,11 @@ class AsyncTransfers(AsyncResource):
     async def validate(self, **payload: Any) -> Any:
         """Validate a transfer payload without creating it."""
         return await self._client.post(f"{_BASE}/validate", json=payload)
+
+    async def confirm_funding(self, transfer_id: str, **payload: Any) -> Transfer:
+        """Confirm funding for a transfer awaiting funds. See :meth:`Transfers.confirm_funding`."""
+        return Transfer.model_validate(
+            await self._client.post(
+                f"{_BASE}/{pid(transfer_id)}/confirm_funding", json=payload or None
+            )
+        )

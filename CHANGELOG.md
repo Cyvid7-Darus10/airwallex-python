@@ -4,6 +4,18 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres
 to [Semantic Versioning](https://semver.org/).
 
+## [0.2.0] - 2026-07-02
+
+### Added
+
+- **Payment acceptance**: `payment_intents` (create/retrieve/list/confirm/confirm_continue/capture/cancel), `customers` (CRUD + `generate_client_secret`), `refunds`.
+- **Issuing**: `issuing_cardholders`, `issuing_cards` (incl. activate/limits), `issuing_transactions`, `issuing_authorizations`.
+- **Payouts completion**: `batch_transfers` (full lifecycle), `wallet_transfers`, `payers`, `transfers.confirm_funding`.
+- **FX completion**: `fx_quotes` (lockable quotes), `conversion_amendments`.
+- **Platform**: `accounts.retrieve`, `financial_transactions`, `settlements`, and demo-only `simulation` helpers (deposits, transfer/payment transitions).
+- Client wiring test guaranteeing every resource is exposed on both sync and async clients.
+- Expanded core test suite (models, pagination edge cases, unicode payloads, context-manager lifecycle); coverage gate raised to 88%.
+
 ## [0.1.0] - 2026-07-02
 
 ### Added

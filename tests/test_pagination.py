@@ -58,3 +58,42 @@ async def test_async_auto_paging(api: respx.MockRouter, async_client):
     page = await async_client.beneficiaries.list()
     ids = [b.beneficiary_id async for b in page.auto_paging_iter()]
     assert ids == ["a", "b"]
+
+
+def test_pagination_starts_at_caller_page(api: respx.MockRouter, client: Airwallex):
+    route = api.get("/api/v1/beneficiaries").respond(200, json=_page(["x"], has_more=True))
+    page = client.beneficiaries.list(page_num=5)
+    assert route.calls[0].request.url.params["page_num"] == "5"
+    assert page.has_more is True
+
+
+def test_manual_next_page(api: respx.MockRouter, client: Airwallex):
+    api.get("/api/v1/beneficiaries").mock(
+        side_effect=[
+            httpx.Response(200, json=_page(["a"], has_more=True)),
+            httpx.Response(200, json=_page(["b"], has_more=False)),
+        ]
+    )
+    first = client.beneficiaries.list()
+    second = first.next_page()
+    assert [b.beneficiary_id for b in second] == ["b"]
+    assert second.has_more is False
+
+
+def test_missing_items_key_yields_empty_page(api: respx.MockRouter, client: Airwallex):
+    api.get("/api/v1/beneficiaries").respond(200, json={"has_more": False})
+    page = client.beneficiaries.list()
+    assert list(page) == []
+    assert len(page) == 0
+
+
+async def test_async_manual_next_page(api: respx.MockRouter, async_client):
+    api.get("/api/v1/beneficiaries").mock(
+        side_effect=[
+            httpx.Response(200, json=_page(["a"], has_more=True)),
+            httpx.Response(200, json=_page(["b"], has_more=False)),
+        ]
+    )
+    first = await async_client.beneficiaries.list()
+    second = await first.next_page()
+    assert [b.beneficiary_id for b in second] == ["b"]

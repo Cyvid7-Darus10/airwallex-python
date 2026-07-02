@@ -183,22 +183,38 @@ client = Airwallex(on_behalf_of="acct_connected_account_id")  # sets x-on-behalf
 client = Airwallex(api_version="2024-08-07")  # sets x-api-version on every request
 ```
 
-## Resources covered (v0.1)
+## Resources covered
 
 | Resource | Methods |
 |---|---|
 | `client.balances` | `current`, `history` |
-| `client.transfers` | `create`, `retrieve`, `list`, `cancel`, `validate` |
+| `client.transfers` | `create`, `retrieve`, `list`, `cancel`, `validate`, `confirm_funding` |
+| `client.batch_transfers` | `create`, `retrieve`, `list`, `add_items`, `delete_items`, `items`, `quote`, `submit`, `delete` |
+| `client.wallet_transfers` | `create`, `retrieve`, `list` |
+| `client.payers` | `create`, `retrieve`, `update`, `delete`, `list`, `validate` |
 | `client.beneficiaries` | `create`, `retrieve`, `update`, `delete`, `list`, `validate` |
 | `client.conversions` | `create`, `retrieve`, `list` |
 | `client.rates` | `current` |
+| `client.fx_quotes` | `create`, `retrieve` |
+| `client.conversion_amendments` | `create`, `quote`, `retrieve`, `list` |
+| `client.payment_intents` | `create`, `retrieve`, `list`, `confirm`, `confirm_continue`, `capture`, `cancel` |
+| `client.customers` | `create`, `retrieve`, `update`, `list`, `generate_client_secret` |
+| `client.refunds` | `create`, `retrieve`, `list` |
+| `client.issuing_cardholders` | `create`, `retrieve`, `update`, `delete`, `list` |
+| `client.issuing_cards` | `create`, `retrieve`, `update`, `activate`, `limits`, `list` |
+| `client.issuing_transactions` | `retrieve`, `list` |
+| `client.issuing_authorizations` | `retrieve`, `list` |
+| `client.accounts` | `retrieve` |
+| `client.financial_transactions` | `retrieve`, `list` |
+| `client.settlements` | `retrieve`, `list` |
+| `client.simulation` | demo-only: deposit create/settle/reject/reverse, transfer/payment transitions |
 | `client.global_accounts` | `create`, `retrieve`, `update`, `close`, `list`, `transactions` |
 | `client.deposits` | `list` |
 | `client.reference` | `supported_currencies`, `settlement_accounts`, `invalid_conversion_dates` |
 | `client.webhook_endpoints` | `create`, `retrieve`, `update`, `delete`, `list` |
 | `airwallex.webhooks` | `verify_signature`, `construct_event` |
 
-Payment acceptance (payment intents, customers, refunds) and issuing (cards, cardholders) are in active development for the next release — contributions welcome.
+Coverage now matches (and in webhooks/pagination/simulation, exceeds) the official Node.js SDK's main surfaces — contributions welcome for the remaining areas (disputes, payment consents, linked accounts, scale/platform APIs).
 
 ## Status
 

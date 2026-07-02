@@ -30,4 +30,4 @@ jobs:
         with:
           enable-cache: true
       - run: uv sync --locked --python ${{ matrix.python-version }}
-      - run: uv run pytest --cov --cov-fail-under=80 -q
+      - run: uv run pytest --cov --cov-fail-under=88 -q

@@ -10,23 +10,55 @@ import httpx
 from ._client import AsyncAPIClient, SyncAPIClient, _ClientConfig
 from ._constants import DEFAULT_MAX_RETRIES, DEFAULT_TIMEOUT_SECONDS, Environment
 from .resources import (
+    Accounts,
+    AsyncAccounts,
     AsyncBalances,
+    AsyncBatchTransfers,
     AsyncBeneficiaries,
+    AsyncConversionAmendments,
     AsyncConversions,
+    AsyncCustomers,
     AsyncDeposits,
+    AsyncFinancialTransactions,
     AsyncGlobalAccounts,
+    AsyncIssuingAuthorizations,
+    AsyncIssuingCardholders,
+    AsyncIssuingCards,
+    AsyncIssuingTransactions,
+    AsyncPayers,
+    AsyncPaymentIntents,
+    AsyncQuotes,
     AsyncRates,
     AsyncReference,
+    AsyncRefunds,
+    AsyncSettlements,
+    AsyncSimulation,
     AsyncTransfers,
+    AsyncWalletTransfers,
     AsyncWebhookEndpoints,
     Balances,
+    BatchTransfers,
     Beneficiaries,
+    ConversionAmendments,
     Conversions,
+    Customers,
     Deposits,
+    FinancialTransactions,
     GlobalAccounts,
+    IssuingAuthorizations,
+    IssuingCardholders,
+    IssuingCards,
+    IssuingTransactions,
+    Payers,
+    PaymentIntents,
+    Quotes,
     Rates,
     Reference,
+    Refunds,
+    Settlements,
+    Simulation,
     Transfers,
+    WalletTransfers,
     WebhookEndpoints,
 )
 
@@ -94,14 +126,30 @@ class Airwallex:
         )
         self._api = SyncAPIClient(config, http=http_client)
 
+        self.accounts = Accounts(self._api)
         self.balances = Balances(self._api)
+        self.batch_transfers = BatchTransfers(self._api)
         self.beneficiaries = Beneficiaries(self._api)
+        self.conversion_amendments = ConversionAmendments(self._api)
         self.conversions = Conversions(self._api)
+        self.customers = Customers(self._api)
         self.deposits = Deposits(self._api)
+        self.financial_transactions = FinancialTransactions(self._api)
+        self.fx_quotes = Quotes(self._api)
         self.global_accounts = GlobalAccounts(self._api)
+        self.issuing_authorizations = IssuingAuthorizations(self._api)
+        self.issuing_cardholders = IssuingCardholders(self._api)
+        self.issuing_cards = IssuingCards(self._api)
+        self.issuing_transactions = IssuingTransactions(self._api)
+        self.payers = Payers(self._api)
+        self.payment_intents = PaymentIntents(self._api)
         self.rates = Rates(self._api)
         self.reference = Reference(self._api)
+        self.refunds = Refunds(self._api)
+        self.settlements = Settlements(self._api)
+        self.simulation = Simulation(self._api)
         self.transfers = Transfers(self._api)
+        self.wallet_transfers = WalletTransfers(self._api)
         self.webhook_endpoints = WebhookEndpoints(self._api)
 
     def request(
@@ -175,14 +223,30 @@ class AsyncAirwallex:
         )
         self._api = AsyncAPIClient(config, http=http_client)
 
+        self.accounts = AsyncAccounts(self._api)
         self.balances = AsyncBalances(self._api)
+        self.batch_transfers = AsyncBatchTransfers(self._api)
         self.beneficiaries = AsyncBeneficiaries(self._api)
+        self.conversion_amendments = AsyncConversionAmendments(self._api)
         self.conversions = AsyncConversions(self._api)
+        self.customers = AsyncCustomers(self._api)
         self.deposits = AsyncDeposits(self._api)
+        self.financial_transactions = AsyncFinancialTransactions(self._api)
+        self.fx_quotes = AsyncQuotes(self._api)
         self.global_accounts = AsyncGlobalAccounts(self._api)
+        self.issuing_authorizations = AsyncIssuingAuthorizations(self._api)
+        self.issuing_cardholders = AsyncIssuingCardholders(self._api)
+        self.issuing_cards = AsyncIssuingCards(self._api)
+        self.issuing_transactions = AsyncIssuingTransactions(self._api)
+        self.payers = AsyncPayers(self._api)
+        self.payment_intents = AsyncPaymentIntents(self._api)
         self.rates = AsyncRates(self._api)
         self.reference = AsyncReference(self._api)
+        self.refunds = AsyncRefunds(self._api)
+        self.settlements = AsyncSettlements(self._api)
+        self.simulation = AsyncSimulation(self._api)
         self.transfers = AsyncTransfers(self._api)
+        self.wallet_transfers = AsyncWalletTransfers(self._api)
         self.webhook_endpoints = AsyncWebhookEndpoints(self._api)
 
     async def request(

@@ -217,3 +217,57 @@ def test_list_accepts_extra_query_params(api: respx.MockRouter, client: Airwalle
     params = route.calls[0].request.url.params
     assert params["short_reference_id"] == "REF123"
     assert params["status"] == "PAID"
+
+
+def test_per_request_headers_override_defaults(api: respx.MockRouter):
+    with Airwallex(
+        client_id="c", api_key="k", environment="demo", api_version="2024-08-07"
+    ) as configured:
+        route = api.get("/api/v1/balances/current").respond(200, json=[])
+        configured.request(
+            "GET", "/api/v1/balances/current", headers={"x-api-version": "2024-01-31"}
+        )
+        assert route.calls[0].request.headers["x-api-version"] == "2024-01-31"
+
+
+def test_timeout_configured_on_owned_client():
+    with Airwallex(client_id="c", api_key="k", environment="demo", timeout=7.5) as c:
+        assert c._api._http.timeout.read == 7.5
+
+
+def test_context_manager_closes_owned_http():
+    with Airwallex(client_id="c", api_key="k", environment="demo") as c:
+        http = c._api._http
+        assert not http.is_closed
+    assert http.is_closed
+
+
+def test_unicode_payload_roundtrip(api: respx.MockRouter, client: Airwallex):
+    route = api.post("/api/v1/transfers/create").respond(201, json={"id": "tra_1"})
+    client.transfers.create(reference="発票 №42 — Ñüñez", beneficiary_id="ben_1")
+    import json as _json
+
+    body = _json.loads(route.calls[0].request.content)
+    assert body["reference"] == "発票 №42 — Ñüñez"
+
+
+def test_error_str_is_informative(api: respx.MockRouter, client: Airwallex):
+    api.get("/api/v1/transfers/tra_x").respond(
+        404,
+        json={"code": "not_found", "source": "id", "message": "no such transfer"},
+        headers={"x-request-id": "req_9"},
+    )
+    with pytest.raises(NotFoundError) as exc_info:
+        client.transfers.retrieve("tra_x")
+    text = str(exc_info.value)
+    assert "404" in text and "not_found" in text and "req_9" in text and "id" in text
+
+
+def test_negative_max_retries_rejected():
+    with pytest.raises(ValueError, match="max_retries"):
+        Airwallex(client_id="c", api_key="k", environment="demo", max_retries=-1)
+
+
+def test_empty_response_body_returns_none(api: respx.MockRouter, client: Airwallex):
+    api.post("/api/v1/webhooks/wh_1/delete").respond(200)
+    assert client.webhook_endpoints.delete("wh_1") is None
