@@ -15,8 +15,8 @@ def main() -> None:
             print(f"  {balance.currency}: {balance.available_amount}")
 
         print("\nIndicative USD->PHP rate:")
-        quote = client.rates.quote(sell_currency="USD", buy_currency="PHP", sell_amount=100)
-        print(f"  {quote.currency_pair} @ {quote.client_rate}")
+        rate = client.rates.current(sell_currency="USD", buy_currency="PHP", sell_amount=100)
+        print(f"  {rate.currency_pair} @ {rate.client_rate}")
 
         print("\nSaved beneficiaries:")
         for beneficiary in client.beneficiaries.list(page_size=10).auto_paging_iter():

@@ -98,12 +98,12 @@ def test_conversion_create_and_rates_quote(api: respx.MockRouter, client: Airwal
     assert conversion.conversion_id == "con_1"
     assert "request_id" in json.loads(route.calls[0].request.content)
 
-    quote_route = api.get("/api/v1/rates/quote").respond(
+    rate_route = api.get("/api/v1/fx/rates/current").respond(
         200, json={"currency_pair": "USDSGD", "client_rate": 1.351}
     )
-    quote = client.rates.quote(buy_currency="USD", sell_currency="SGD", buy_amount=100)
-    assert quote.client_rate == 1.351
-    assert quote_route.calls[0].request.url.params["buy_amount"] == "100"
+    rate = client.rates.current(buy_currency="USD", sell_currency="SGD", buy_amount=100)
+    assert rate.client_rate == 1.351
+    assert rate_route.calls[0].request.url.params["buy_amount"] == "100"
 
 
 def test_global_accounts(api: respx.MockRouter, client: Airwallex):
@@ -170,3 +170,42 @@ def test_balances_history_paged(api: respx.MockRouter, client: Airwallex):
     history = client.balances.history(currency="USD")
     assert history.items[0].amount == -20.0
     assert route.calls[0].request.url.params["currency"] == "USD"
+
+
+def test_path_ids_are_url_escaped(api: respx.MockRouter, client: Airwallex):
+    # A traversal-style id must stay inside the transfers endpoint, encoded.
+    route = api.get("/api/v1/transfers/..%2Fcreate").respond(200, json={"id": "x"})
+    client.transfers.retrieve("../create")
+    assert route.called
+    # raw_path is what goes on the wire; .path would show the decoded form
+    assert route.calls[0].request.url.raw_path.endswith(b"/api/v1/transfers/..%2Fcreate")
+
+
+def test_transfer_cancel_and_validate(api: respx.MockRouter, client: Airwallex):
+    cancel_route = api.post("/api/v1/transfers/tra_1/cancel").respond(
+        200, json={"id": "tra_1", "status": "CANCELLED"}
+    )
+    cancelled = client.transfers.cancel("tra_1")
+    assert cancelled.status == "CANCELLED"
+    assert cancel_route.called
+
+    validate_route = api.post("/api/v1/transfers/validate").respond(200, json={"valid": True})
+    result = client.transfers.validate(beneficiary_id="ben_1", transfer_amount=10)
+    assert result == {"valid": True}
+    assert json.loads(validate_route.calls[0].request.content)["transfer_amount"] == 10
+
+
+def test_raw_request_escape_hatch(api: respx.MockRouter, client: Airwallex):
+    route = api.get("/api/v1/issuing/cards").respond(
+        200, json={"has_more": False, "items": [{"card_id": "c1"}]}
+    )
+    data = client.request("GET", "/api/v1/issuing/cards", params={"card_status": "ACTIVE"})
+    assert data["items"][0]["card_id"] == "c1"
+    assert route.calls[0].request.url.params["card_status"] == "ACTIVE"
+    assert route.calls[0].request.headers["authorization"] == "Bearer tok_test"
+
+
+async def test_async_raw_request_escape_hatch(api: respx.MockRouter, async_client):
+    api.post("/api/v1/custom/endpoint").respond(200, json={"ok": True})
+    data = await async_client.request("POST", "/api/v1/custom/endpoint", json={"a": 1})
+    assert data == {"ok": True}

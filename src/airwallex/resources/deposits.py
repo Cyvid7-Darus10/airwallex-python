@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Optional
 
 from .._pagination import AsyncPage, SyncPage
 from ..types.deposit import Deposit
@@ -17,6 +17,7 @@ class Deposits(SyncResource):
         to_created_at: Optional[str] = None,
         page_num: int = 0,
         page_size: Optional[int] = None,
+        **extra_params: Any,
     ) -> SyncPage[Deposit]:
         """List deposits received into the wallet."""
         return self._paged(
@@ -27,6 +28,7 @@ class Deposits(SyncResource):
                 "to_created_at": to_created_at,
                 "page_num": page_num,
                 "page_size": page_size,
+                **extra_params,
             },
         )
 
@@ -39,6 +41,7 @@ class AsyncDeposits(AsyncResource):
         to_created_at: Optional[str] = None,
         page_num: int = 0,
         page_size: Optional[int] = None,
+        **extra_params: Any,
     ) -> AsyncPage[Deposit]:
         """List deposits received into the wallet."""
         return await self._paged(
@@ -49,5 +52,6 @@ class AsyncDeposits(AsyncResource):
                 "to_created_at": to_created_at,
                 "page_num": page_num,
                 "page_size": page_size,
+                **extra_params,
             },
         )

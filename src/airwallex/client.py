@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Mapping
 from types import TracebackType
-from typing import Optional
+from typing import Any, Optional
 
 import httpx
 
@@ -103,6 +104,23 @@ class Airwallex:
         self.transfers = Transfers(self._api)
         self.webhook_endpoints = WebhookEndpoints(self._api)
 
+    def request(
+        self,
+        method: str,
+        path: str,
+        *,
+        params: Optional[Mapping[str, Any]] = None,
+        json: Optional[Mapping[str, Any]] = None,
+        headers: Optional[Mapping[str, str]] = None,
+    ) -> Any:
+        """Call any Airwallex endpoint, including ones this SDK has no wrapper for.
+
+        Authentication, retries, and error mapping still apply::
+
+            cards = client.request("GET", "/api/v1/issuing/cards", params={"card_status": "ACTIVE"})
+        """
+        return self._api.request(method, path, params=params, json=json, headers=headers)
+
     def close(self) -> None:
         """Release the underlying HTTP connection pool."""
         self._api.close()
@@ -166,6 +184,18 @@ class AsyncAirwallex:
         self.reference = AsyncReference(self._api)
         self.transfers = AsyncTransfers(self._api)
         self.webhook_endpoints = AsyncWebhookEndpoints(self._api)
+
+    async def request(
+        self,
+        method: str,
+        path: str,
+        *,
+        params: Optional[Mapping[str, Any]] = None,
+        json: Optional[Mapping[str, Any]] = None,
+        headers: Optional[Mapping[str, str]] = None,
+    ) -> Any:
+        """Call any Airwallex endpoint. See :meth:`Airwallex.request`."""
+        return await self._api.request(method, path, params=params, json=json, headers=headers)
 
     async def close(self) -> None:
         """Release the underlying HTTP connection pool."""

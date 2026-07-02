@@ -81,3 +81,21 @@ def test_parse_expires_at_formats():
     fallback = _parse_expires_at("garbage")
     assert time.time() + 25 * 60 < fallback < time.time() + 35 * 60
     assert TOKEN_RESPONSE["token"]  # keep fixture import meaningful
+
+
+def test_login_5xx_is_retried(api: respx.MockRouter, client: Airwallex):
+    api["login"].mock(
+        side_effect=[
+            httpx.Response(503, json={"message": "auth outage"}),
+            httpx.Response(201, json=TOKEN_RESPONSE),
+        ]
+    )
+    api.get("/api/v1/balances/current").respond(200, json=[])
+    assert client.balances.current() == []
+    assert api["login"].call_count == 2
+
+
+def test_login_non_json_body_raises_authentication_error(api: respx.MockRouter, client: Airwallex):
+    api["login"].mock(return_value=httpx.Response(201, text="<html>maintenance</html>"))
+    with pytest.raises(AuthenticationError, match="unparseable"):
+        client.balances.current()

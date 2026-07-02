@@ -3,10 +3,12 @@ from __future__ import annotations
 import asyncio
 import datetime as dt
 import email.utils
+import logging
 import random
 import time
 from collections.abc import Mapping
 from typing import Any, Optional, Union
+from urllib.parse import urlparse
 
 import httpx
 
@@ -20,11 +22,36 @@ from ._constants import (
     RETRYABLE_STATUS_CODES,
     Environment,
 )
-from ._errors import APIConnectionError, APIError, error_from_response
+from ._errors import (
+    APIConnectionError,
+    APIError,
+    RateLimitError,
+    ServerError,
+    error_from_response,
+)
 from ._version import __version__
 
 Query = Optional[Mapping[str, Any]]
 Body = Optional[Mapping[str, Any]]
+
+logger = logging.getLogger("airwallex")
+
+_INSECURE_HOSTS = frozenset({"localhost", "127.0.0.1", "::1"})
+
+
+def _validate_base_url(base_url: str) -> str:
+    """Require HTTPS so credentials are never sent in cleartext.
+
+    Plain HTTP is allowed only for loopback hosts (local mocks and tests).
+    """
+    parsed = urlparse(base_url)
+    if parsed.scheme == "https":
+        return base_url
+    if parsed.scheme == "http" and parsed.hostname in _INSECURE_HOSTS:
+        return base_url
+    raise ValueError(
+        f"base_url must use https (got {base_url!r}); plain http is only allowed for localhost"
+    )
 
 
 class _ClientConfig:
@@ -46,7 +73,7 @@ class _ClientConfig:
             raise ValueError(f"environment must be one of {sorted(BASE_URLS)}, got {environment!r}")
         if max_retries < 0:
             raise ValueError("max_retries must be >= 0")
-        self.base_url = (base_url or BASE_URLS[environment]).rstrip("/")
+        self.base_url = _validate_base_url((base_url or BASE_URLS[environment]).rstrip("/"))
         self.environment = environment
         self.api_version = api_version
         self.on_behalf_of = on_behalf_of
@@ -60,6 +87,11 @@ class _ClientConfig:
             f"_ClientConfig(client_id={self.client_id!r}, api_key='[REDACTED]', "
             f"environment={self.environment!r}, base_url={self.base_url!r})"
         )
+
+    def __getstate__(self) -> dict[str, object]:
+        state = dict(self.__dict__)
+        state["api_key"] = "[REDACTED]"
+        return state
 
     def default_headers(self) -> dict[str, str]:
         headers = {
@@ -122,12 +154,14 @@ class SyncAPIClient:
 
     def __init__(self, config: _ClientConfig, http: Optional[httpx.Client] = None) -> None:
         self._config = config
-        self._http = http or httpx.Client(
-            base_url=config.base_url,
-            timeout=config.timeout,
-            headers=config.default_headers(),
+        # base_url and default headers are applied per request (not on the
+        # httpx client), so a caller-supplied http_client behaves identically
+        # to the one we construct.
+        self._owns_http = http is None
+        self._http = http or httpx.Client(timeout=config.timeout)
+        self._token_manager = TokenManager(
+            config.client_id, config.api_key, base_url=config.base_url
         )
-        self._token_manager = TokenManager(config.client_id, config.api_key)
 
     def request(
         self,
@@ -139,14 +173,36 @@ class SyncAPIClient:
         headers: Optional[Mapping[str, str]] = None,
     ) -> Any:
         """Send an authenticated request, retrying transient failures."""
+        url = f"{self._config.base_url}{path}"
         auth_retried = False
         attempt = 0
         while True:
-            token = self._token_manager.get_token(self._http)
-            request_headers = {"Authorization": f"Bearer {token}", **(headers or {})}
+            try:
+                token = self._token_manager.get_token(self._http)
+            except httpx.TransportError as exc:
+                if attempt >= self._config.max_retries:
+                    raise APIConnectionError(
+                        f"Login failed after {attempt + 1} attempt(s): {exc}"
+                    ) from exc
+                time.sleep(_retry_delay(attempt, None))
+                attempt += 1
+                continue
+            except (ServerError, RateLimitError) as exc:
+                # A transient auth-endpoint outage gets the same retry budget
+                # as any other endpoint.
+                if attempt >= self._config.max_retries:
+                    raise
+                time.sleep(_retry_delay(attempt, exc.response))
+                attempt += 1
+                continue
+            request_headers = {
+                **self._config.default_headers(),
+                "Authorization": f"Bearer {token}",
+                **(headers or {}),
+            }
             try:
                 response = self._http.request(
-                    method, path, params=params, json=json, headers=request_headers
+                    method, url, params=params, json=json, headers=request_headers
                 )
             except httpx.TransportError as exc:
                 if attempt >= self._config.max_retries:
@@ -157,12 +213,22 @@ class SyncAPIClient:
                 attempt += 1
                 continue
 
+            logger.debug("%s %s -> %s", method, path, response.status_code)
             if response.status_code == 401 and not auth_retried:
+                logger.debug("401 received; refreshing token and retrying once")
                 self._token_manager.invalidate()
                 auth_retried = True
                 continue
             retryable = response.status_code in RETRYABLE_STATUS_CODES
             if retryable and attempt < self._config.max_retries:
+                logger.debug(
+                    "retrying %s %s after %s (attempt %d/%d)",
+                    method,
+                    path,
+                    response.status_code,
+                    attempt + 1,
+                    self._config.max_retries,
+                )
                 time.sleep(_retry_delay(attempt, response))
                 attempt += 1
                 continue
@@ -177,7 +243,8 @@ class SyncAPIClient:
         return self.request("POST", path, json=json, params=params)
 
     def close(self) -> None:
-        self._http.close()
+        if self._owns_http:
+            self._http.close()
 
 
 class AsyncAPIClient:
@@ -185,12 +252,11 @@ class AsyncAPIClient:
 
     def __init__(self, config: _ClientConfig, http: Optional[httpx.AsyncClient] = None) -> None:
         self._config = config
-        self._http = http or httpx.AsyncClient(
-            base_url=config.base_url,
-            timeout=config.timeout,
-            headers=config.default_headers(),
+        self._owns_http = http is None
+        self._http = http or httpx.AsyncClient(timeout=config.timeout)
+        self._token_manager = AsyncTokenManager(
+            config.client_id, config.api_key, base_url=config.base_url
         )
-        self._token_manager = AsyncTokenManager(config.client_id, config.api_key)
 
     async def request(
         self,
@@ -202,14 +268,34 @@ class AsyncAPIClient:
         headers: Optional[Mapping[str, str]] = None,
     ) -> Any:
         """Send an authenticated request, retrying transient failures."""
+        url = f"{self._config.base_url}{path}"
         auth_retried = False
         attempt = 0
         while True:
-            token = await self._token_manager.get_token(self._http)
-            request_headers = {"Authorization": f"Bearer {token}", **(headers or {})}
+            try:
+                token = await self._token_manager.get_token(self._http)
+            except httpx.TransportError as exc:
+                if attempt >= self._config.max_retries:
+                    raise APIConnectionError(
+                        f"Login failed after {attempt + 1} attempt(s): {exc}"
+                    ) from exc
+                await asyncio.sleep(_retry_delay(attempt, None))
+                attempt += 1
+                continue
+            except (ServerError, RateLimitError) as exc:
+                if attempt >= self._config.max_retries:
+                    raise
+                await asyncio.sleep(_retry_delay(attempt, exc.response))
+                attempt += 1
+                continue
+            request_headers = {
+                **self._config.default_headers(),
+                "Authorization": f"Bearer {token}",
+                **(headers or {}),
+            }
             try:
                 response = await self._http.request(
-                    method, path, params=params, json=json, headers=request_headers
+                    method, url, params=params, json=json, headers=request_headers
                 )
             except httpx.TransportError as exc:
                 if attempt >= self._config.max_retries:
@@ -220,12 +306,22 @@ class AsyncAPIClient:
                 attempt += 1
                 continue
 
+            logger.debug("%s %s -> %s", method, path, response.status_code)
             if response.status_code == 401 and not auth_retried:
+                logger.debug("401 received; refreshing token and retrying once")
                 self._token_manager.invalidate()
                 auth_retried = True
                 continue
             retryable = response.status_code in RETRYABLE_STATUS_CODES
             if retryable and attempt < self._config.max_retries:
+                logger.debug(
+                    "retrying %s %s after %s (attempt %d/%d)",
+                    method,
+                    path,
+                    response.status_code,
+                    attempt + 1,
+                    self._config.max_retries,
+                )
                 await asyncio.sleep(_retry_delay(attempt, response))
                 attempt += 1
                 continue
@@ -240,7 +336,8 @@ class AsyncAPIClient:
         return await self.request("POST", path, json=json, params=params)
 
     async def close(self) -> None:
-        await self._http.aclose()
+        if self._owns_http:
+            await self._http.aclose()
 
 
 AnyAPIClient = Union[SyncAPIClient, AsyncAPIClient]

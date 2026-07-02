@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import uuid
 from typing import Any, Optional, TypeVar
+from urllib.parse import quote
 
 from pydantic import BaseModel
 
@@ -10,6 +11,15 @@ from .._models import clean_params
 from .._pagination import AsyncPage, SyncPage
 
 T = TypeVar("T", bound=BaseModel)
+
+
+def pid(value: str) -> str:
+    """Percent-encode a resource id for safe URL-path interpolation.
+
+    Prevents a malicious or malformed id (e.g. ``"../create"``) from routing
+    the request to a different endpoint.
+    """
+    return quote(str(value), safe="")
 
 
 def ensure_request_id(payload: dict[str, Any]) -> dict[str, Any]:

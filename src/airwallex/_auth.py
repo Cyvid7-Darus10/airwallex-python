@@ -55,6 +55,13 @@ class _TokenState:
     def __repr__(self) -> str:
         return f"_TokenState(client_id={self.client_id!r}, api_key='[REDACTED]')"
 
+    def __getstate__(self) -> dict[str, object]:
+        state = dict(self.__dict__)
+        state["api_key"] = "[REDACTED]"
+        if state.get("token"):
+            state["token"] = "[REDACTED]"
+        return state
+
     def is_fresh(self) -> bool:
         now = dt.datetime.now(dt.timezone.utc).timestamp()
         return self.token is not None and now < self.expires_at - TOKEN_REFRESH_LEEWAY_SECONDS
@@ -65,7 +72,15 @@ class _TokenState:
     def store(self, response: httpx.Response) -> str:
         if response.status_code >= 400:
             raise error_from_response(response)
-        body = response.json()
+        try:
+            body = response.json()
+        except ValueError as exc:
+            raise AuthenticationError(
+                f"Login returned a {response.status_code} response with an unparseable "
+                "body (is a proxy intercepting the request?)",
+                response=response,
+                body=None,
+            ) from exc
         token = body.get("token")
         if not isinstance(token, str) or not token:
             raise AuthenticationError(
@@ -83,8 +98,9 @@ class _TokenState:
 class TokenManager:
     """Fetches and caches the bearer token for a sync client (thread-safe)."""
 
-    def __init__(self, client_id: str, api_key: str) -> None:
+    def __init__(self, client_id: str, api_key: str, *, base_url: str = "") -> None:
         self._state = _TokenState(client_id, api_key)
+        self._login_url = f"{base_url}{LOGIN_PATH}"
         self._lock = threading.Lock()
 
     def get_token(self, http: httpx.Client) -> str:
@@ -92,7 +108,7 @@ class TokenManager:
             token = self._state.token
             if token is not None and self._state.is_fresh():
                 return token
-            response = http.post(LOGIN_PATH, headers=self._state.login_headers())
+            response = http.post(self._login_url, headers=self._state.login_headers())
             return self._state.store(response)
 
     def invalidate(self) -> None:
@@ -103,8 +119,9 @@ class TokenManager:
 class AsyncTokenManager:
     """Fetches and caches the bearer token for an async client."""
 
-    def __init__(self, client_id: str, api_key: str) -> None:
+    def __init__(self, client_id: str, api_key: str, *, base_url: str = "") -> None:
         self._state = _TokenState(client_id, api_key)
+        self._login_url = f"{base_url}{LOGIN_PATH}"
         self._lock = asyncio.Lock()
 
     async def get_token(self, http: httpx.AsyncClient) -> str:
@@ -112,7 +129,7 @@ class AsyncTokenManager:
             token = self._state.token
             if token is not None and self._state.is_fresh():
                 return token
-            response = await http.post(LOGIN_PATH, headers=self._state.login_headers())
+            response = await http.post(self._login_url, headers=self._state.login_headers())
             return self._state.store(response)
 
     def invalidate(self) -> None:
