@@ -24,11 +24,13 @@ Airwallex's only official server-side SDK is Node.js. This library brings the sa
 
 ## Installation
 
+Available on [PyPI](https://pypi.org/project/airwallex/):
+
 ```bash
 pip install airwallex
 ```
 
-Requires Python 3.9+.
+Requires Python 3.9+. Releases follow [semantic versioning](#status); see the [changelog](CHANGELOG.md).
 
 ## Quickstart
 
@@ -196,7 +198,7 @@ client = Airwallex(api_version="2024-08-07")  # sets x-api-version on every requ
 | `client.webhook_endpoints` | `create`, `retrieve`, `update`, `delete`, `list` |
 | `airwallex.webhooks` | `verify_signature`, `construct_event` |
 
-Payment acceptance (payment intents), issuing, and billing are planned — contributions welcome.
+Payment acceptance (payment intents, customers, refunds) and issuing (cards, cardholders) are in active development for the next release — contributions welcome.
 
 ## Status
 
@@ -205,7 +207,7 @@ This SDK is **beta** software:
 - The wrapped endpoints are grounded in Airwallex's published API spec and covered by tests, but they have not yet been exercised against every account configuration.
 - Semantic versioning applies: breaking changes only in minor versions while `0.x`, and patch releases never change behavior.
 - Response models tolerate unknown fields, so new Airwallex API versions won't break parsing.
-- Test in the `demo` environment before pointing at production, and pin the version in your dependency file (`airwallex==0.1.0`).
+- Test in the `demo` environment before pointing at production, and pin the version in your dependency file (e.g. `airwallex==0.1.0`).
 
 ## Development
 
