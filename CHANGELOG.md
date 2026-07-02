@@ -4,6 +4,18 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres
 to [Semantic Versioning](https://semver.org/).
 
+## [0.2.1] - 2026-07-02
+
+### Fixed
+
+- Payment-acceptance lifecycle actions (`payment_intents.confirm`/`confirm_continue`/`capture`/`cancel`) and `customers.update` now auto-generate the `request_id` the API requires — previously these calls failed with `400 validation_error`.
+- `RateQuote` types the `rate`, `conversion_date`, and `created_at` fields returned by the live `fx/rates/current` endpoint.
+
+### Added
+
+- Live demo-environment smoke and lifecycle test scripts under `examples/` (verified: 40+ checks against the real sandbox, including funded transfers and FX conversions).
+- README notes on live-API quirks: per-endpoint-group version requirements, minimum `page_size` of 10, `version` required on webhook creation.
+
 ## [0.2.0] - 2026-07-02
 
 ### Added
