@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import asyncio
+import datetime as dt
+import email.utils
 import random
 import time
 from collections.abc import Mapping
@@ -18,7 +20,7 @@ from ._constants import (
     RETRYABLE_STATUS_CODES,
     Environment,
 )
-from ._errors import APIConnectionError, error_from_response
+from ._errors import APIConnectionError, APIError, error_from_response
 from ._version import __version__
 
 Query = Optional[Mapping[str, Any]]
@@ -53,6 +55,12 @@ class _ClientConfig:
         self.client_id = client_id
         self.api_key = api_key
 
+    def __repr__(self) -> str:
+        return (
+            f"_ClientConfig(client_id={self.client_id!r}, api_key='[REDACTED]', "
+            f"environment={self.environment!r}, base_url={self.base_url!r})"
+        )
+
     def default_headers(self) -> dict[str, str]:
         headers = {
             "User-Agent": f"airwallex-python/{__version__}",
@@ -65,15 +73,30 @@ class _ClientConfig:
         return headers
 
 
+def _parse_retry_after(value: str) -> Optional[float]:
+    """Parse a Retry-After header: either delta-seconds or an HTTP-date (RFC 7231)."""
+    try:
+        return max(0.0, float(value))
+    except ValueError:
+        pass
+    try:
+        retry_at = email.utils.parsedate_to_datetime(value)
+    except (TypeError, ValueError):
+        return None
+    if retry_at.tzinfo is None:
+        retry_at = retry_at.replace(tzinfo=dt.timezone.utc)
+    now = dt.datetime.now(dt.timezone.utc)
+    return max(0.0, (retry_at - now).total_seconds())
+
+
 def _retry_delay(attempt: int, response: Optional[httpx.Response]) -> float:
     """Full-jitter exponential backoff, honouring Retry-After when present."""
     if response is not None:
         retry_after = response.headers.get("retry-after")
         if retry_after is not None:
-            try:
-                return max(0.0, float(retry_after))
-            except ValueError:
-                pass
+            delay = _parse_retry_after(retry_after)
+            if delay is not None:
+                return delay
     cap = min(
         DEFAULT_MAX_RETRY_DELAY_SECONDS,
         DEFAULT_INITIAL_RETRY_DELAY_SECONDS * (2**attempt),
@@ -84,7 +107,14 @@ def _retry_delay(attempt: int, response: Optional[httpx.Response]) -> float:
 def _parse_body(response: httpx.Response) -> Any:
     if not response.content:
         return None
-    return response.json()
+    try:
+        return response.json()
+    except ValueError as exc:
+        raise APIError(
+            f"Airwallex returned a {response.status_code} response with an unparseable "
+            f"body (content-type: {response.headers.get('content-type', 'unknown')})",
+            request=response.request,
+        ) from exc
 
 
 class SyncAPIClient:

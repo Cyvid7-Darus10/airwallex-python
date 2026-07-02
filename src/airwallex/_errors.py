@@ -121,7 +121,7 @@ def error_from_response(response: httpx.Response) -> APIStatusError:
     """Build the most specific error type for an HTTP error response."""
     try:
         body: Any = response.json()
-    except Exception:
+    except ValueError:
         body = None
     if isinstance(body, dict):
         message = str(body.get("message") or body.get("error") or response.reason_phrase)
