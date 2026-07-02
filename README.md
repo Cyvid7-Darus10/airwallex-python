@@ -3,7 +3,8 @@
 **Unofficial** Python SDK for the [Airwallex API](https://www.airwallex.com/docs/api) — payouts, FX, balances, global accounts, beneficiaries, deposits, and webhooks.
 
 [![CI](https://github.com/Cyvid7-Darus10/airwallex-python/actions/workflows/ci.yml/badge.svg)](https://github.com/Cyvid7-Darus10/airwallex-python/actions/workflows/ci.yml)
-[![Python](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://github.com/Cyvid7-Darus10/airwallex-python)
+[![PyPI](https://img.shields.io/pypi/v/airwallex)](https://pypi.org/project/airwallex/)
+[![Python](https://img.shields.io/pypi/pyversions/airwallex)](https://pypi.org/project/airwallex/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Status: Beta](https://img.shields.io/badge/status-beta-orange.svg)](#status)
 
@@ -22,14 +23,6 @@ Airwallex's only official server-side SDK is Node.js. This library brings the sa
 - **Typed errors** — `RateLimitError`, `AuthenticationError`, … each carrying the Airwallex error `code`, `source`, and `request_id`
 
 ## Installation
-
-> Not yet on PyPI — the first release is imminent. Until then, install from GitHub:
-
-```bash
-pip install git+https://github.com/Cyvid7-Darus10/airwallex-python.git
-```
-
-Once published:
 
 ```bash
 pip install airwallex
