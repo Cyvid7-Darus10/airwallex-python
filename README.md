@@ -267,6 +267,10 @@ This SDK is **beta** software:
 - Response models tolerate unknown fields, so new Airwallex API versions won't break parsing.
 - Test in the `demo` environment before pointing at production, and pin the version in your dependency file (e.g. `airwallex==0.2.0`).
 
+## More examples
+
+Runnable scripts for every major flow — payments, issuing, FX, webhooks, async, error handling — live in [`examples/`](examples/).
+
 ## Development
 
 ```bash
