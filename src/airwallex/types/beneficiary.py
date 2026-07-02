@@ -37,10 +37,16 @@ class BeneficiaryDetails(AirwallexModel):
 
 
 class Beneficiary(AirwallexModel):
-    """A saved payout destination (``/api/v1/beneficiaries``)."""
+    """A saved payout destination (``/api/v1/beneficiaries``).
+
+    Newer API versions rename ``beneficiary_id`` to ``id`` and
+    ``payment_methods`` to ``transfer_methods``; both shapes are typed.
+    """
 
     beneficiary_id: Optional[str] = None
+    id: Optional[str] = None
     nickname: Optional[str] = None
     payer_entity_type: Optional[str] = None
     payment_methods: Optional[list[str]] = None
+    transfer_methods: Optional[list[str]] = None
     beneficiary: Optional[BeneficiaryDetails] = None

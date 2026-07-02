@@ -224,6 +224,7 @@ Two quirks observed against the live demo API, worth knowing:
 - Several list endpoints enforce a **minimum `page_size` of 10** and return `invalid_argument` below it.
 - Payment-acceptance lifecycle actions (`payment_intents.confirm/capture/cancel`, `customers.update`) require a `request_id` — the SDK auto-generates one, like it does for creates.
 - `webhook_endpoints.create` requires a `version` field (e.g. `version="2024-01-31"`).
+- Newer API versions rename beneficiary fields (`beneficiary_id` → `id`, `payment_methods` → `transfer_methods`); the `Beneficiary` model types both.
 
 ## Resources covered
 

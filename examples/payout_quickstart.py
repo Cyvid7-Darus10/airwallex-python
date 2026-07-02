@@ -20,7 +20,7 @@ def main() -> None:
 
         print("\nSaved beneficiaries:")
         for beneficiary in client.beneficiaries.list(page_size=10).auto_paging_iter():
-            print(f"  {beneficiary.beneficiary_id}: {beneficiary.nickname}")
+            print(f"  {beneficiary.beneficiary_id or beneficiary.id}: {beneficiary.nickname}")
 
         try:
             transfer = client.transfers.create(

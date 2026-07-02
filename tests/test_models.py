@@ -61,3 +61,11 @@ def test_none_and_empty_payloads_tolerated():
     assert Transfer.model_validate({}).id is None
     balance = Balance.model_validate({"currency": None})
     assert balance.currency is None
+
+
+def test_beneficiary_parses_both_api_version_shapes():
+    legacy = Beneficiary.model_validate({"beneficiary_id": "ben_1", "payment_methods": ["LOCAL"]})
+    assert legacy.beneficiary_id == "ben_1"
+    modern = Beneficiary.model_validate({"id": "ben_1", "transfer_methods": ["LOCAL"]})
+    assert modern.id == "ben_1"
+    assert modern.transfer_methods == ["LOCAL"]
