@@ -222,6 +222,8 @@ Two quirks observed against the live demo API, worth knowing:
 
 - Airwallex versions endpoint groups independently — e.g. `conversions.list` requires `2024-01-31` on some accounts while `fx/rates/current` rejects it. If you hit `incorrect_version` errors, use a second client pinned differently for that endpoint group.
 - Several list endpoints enforce a **minimum `page_size` of 10** and return `invalid_argument` below it.
+- Payment-acceptance lifecycle actions (`payment_intents.confirm/capture/cancel`, `customers.update`) require a `request_id` — the SDK auto-generates one, like it does for creates.
+- `webhook_endpoints.create` requires a `version` field (e.g. `version="2024-01-31"`).
 
 ## Resources covered
 

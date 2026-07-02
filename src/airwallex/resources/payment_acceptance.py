@@ -71,27 +71,38 @@ class PaymentIntents(SyncResource):
         return PaymentIntent.model_validate(self._client.post(f"{_INTENTS}/create", json=body))
 
     def confirm(self, payment_intent_id: str, **payload: Any) -> PaymentIntent:
+        """Confirm a payment intent. A ``request_id`` is auto-generated if omitted
+        (the API requires one on every intent action)."""
         """Confirm a payment intent with a payment method or consent."""
         return PaymentIntent.model_validate(
-            self._client.post(f"{_INTENTS}/{pid(payment_intent_id)}/confirm", json=payload)
+            self._client.post(
+                f"{_INTENTS}/{pid(payment_intent_id)}/confirm", json=ensure_request_id(payload)
+            )
         )
 
     def confirm_continue(self, payment_intent_id: str, **payload: Any) -> PaymentIntent:
         """Continue confirming a payment intent (e.g. after a 3DS challenge)."""
         return PaymentIntent.model_validate(
-            self._client.post(f"{_INTENTS}/{pid(payment_intent_id)}/confirm_continue", json=payload)
+            self._client.post(
+                f"{_INTENTS}/{pid(payment_intent_id)}/confirm_continue",
+                json=ensure_request_id(payload),
+            )
         )
 
     def capture(self, payment_intent_id: str, **payload: Any) -> PaymentIntent:
         """Capture funds authorized by a payment intent."""
         return PaymentIntent.model_validate(
-            self._client.post(f"{_INTENTS}/{pid(payment_intent_id)}/capture", json=payload)
+            self._client.post(
+                f"{_INTENTS}/{pid(payment_intent_id)}/capture", json=ensure_request_id(payload)
+            )
         )
 
     def cancel(self, payment_intent_id: str, **payload: Any) -> PaymentIntent:
         """Cancel a payment intent that has not been captured."""
         return PaymentIntent.model_validate(
-            self._client.post(f"{_INTENTS}/{pid(payment_intent_id)}/cancel", json=payload)
+            self._client.post(
+                f"{_INTENTS}/{pid(payment_intent_id)}/cancel", json=ensure_request_id(payload)
+            )
         )
 
 
@@ -140,7 +151,9 @@ class Customers(SyncResource):
     def update(self, customer_id: str, **payload: Any) -> Customer:
         """Update an existing customer."""
         return Customer.model_validate(
-            self._client.post(f"{_CUSTOMERS}/{pid(customer_id)}/update", json=payload)
+            self._client.post(
+                f"{_CUSTOMERS}/{pid(customer_id)}/update", json=ensure_request_id(payload)
+            )
         )
 
     def generate_client_secret(self, customer_id: str) -> CustomerClientSecret:
@@ -250,27 +263,34 @@ class AsyncPaymentIntents(AsyncResource):
     async def confirm(self, payment_intent_id: str, **payload: Any) -> PaymentIntent:
         """Confirm a payment intent with a payment method or consent."""
         return PaymentIntent.model_validate(
-            await self._client.post(f"{_INTENTS}/{pid(payment_intent_id)}/confirm", json=payload)
+            await self._client.post(
+                f"{_INTENTS}/{pid(payment_intent_id)}/confirm", json=ensure_request_id(payload)
+            )
         )
 
     async def confirm_continue(self, payment_intent_id: str, **payload: Any) -> PaymentIntent:
         """Continue confirming a payment intent (e.g. after a 3DS challenge)."""
         return PaymentIntent.model_validate(
             await self._client.post(
-                f"{_INTENTS}/{pid(payment_intent_id)}/confirm_continue", json=payload
+                f"{_INTENTS}/{pid(payment_intent_id)}/confirm_continue",
+                json=ensure_request_id(payload),
             )
         )
 
     async def capture(self, payment_intent_id: str, **payload: Any) -> PaymentIntent:
         """Capture funds authorized by a payment intent."""
         return PaymentIntent.model_validate(
-            await self._client.post(f"{_INTENTS}/{pid(payment_intent_id)}/capture", json=payload)
+            await self._client.post(
+                f"{_INTENTS}/{pid(payment_intent_id)}/capture", json=ensure_request_id(payload)
+            )
         )
 
     async def cancel(self, payment_intent_id: str, **payload: Any) -> PaymentIntent:
         """Cancel a payment intent that has not been captured."""
         return PaymentIntent.model_validate(
-            await self._client.post(f"{_INTENTS}/{pid(payment_intent_id)}/cancel", json=payload)
+            await self._client.post(
+                f"{_INTENTS}/{pid(payment_intent_id)}/cancel", json=ensure_request_id(payload)
+            )
         )
 
 
@@ -313,7 +333,9 @@ class AsyncCustomers(AsyncResource):
     async def update(self, customer_id: str, **payload: Any) -> Customer:
         """Update an existing customer."""
         return Customer.model_validate(
-            await self._client.post(f"{_CUSTOMERS}/{pid(customer_id)}/update", json=payload)
+            await self._client.post(
+                f"{_CUSTOMERS}/{pid(customer_id)}/update", json=ensure_request_id(payload)
+            )
         )
 
     async def generate_client_secret(self, customer_id: str) -> CustomerClientSecret:

@@ -64,7 +64,9 @@ def test_payment_intent_capture(api: respx.MockRouter, client: Airwallex):
     )
     captured = PaymentIntents(client._api).capture("int_1", amount=25.0)
     assert captured.captured_amount == 25.0
-    assert json.loads(route.calls[0].request.content) == {"amount": 25.0}
+    body = json.loads(route.calls[0].request.content)
+    assert body["amount"] == 25.0
+    uuid.UUID(body["request_id"])  # spec: request_id required on intent actions
 
 
 def test_customer_crud_and_client_secret(api: respx.MockRouter, client: Airwallex):
@@ -89,7 +91,9 @@ def test_customer_crud_and_client_secret(api: respx.MockRouter, client: Airwalle
     )
     updated = customers.update("cus_1", first_name="Joan")
     assert updated.first_name == "Joan"
-    assert json.loads(update_route.calls[0].request.content) == {"first_name": "Joan"}
+    update_body = json.loads(update_route.calls[0].request.content)
+    assert update_body["first_name"] == "Joan"
+    uuid.UUID(update_body["request_id"])  # spec: request_id required on customer update
 
     api.get("/api/v1/pa/customers/cus_1/generate_client_secret").respond(
         200, json={"client_secret": "cs_x", "expired_time": "2099-01-01T00:00:00+0000"}
@@ -156,3 +160,20 @@ async def test_async_payment_intent_confirm(api: respx.MockRouter, async_client)
     assert confirmed.status == "SUCCEEDED"
     body = json.loads(route.calls[0].request.content)
     assert body["payment_method"] == {"type": "card"}
+
+
+def test_intent_actions_auto_generate_request_id(api: respx.MockRouter, client: Airwallex):
+    intents = PaymentIntents(client._api)
+    route = api.post("/api/v1/pa/payment_intents/int_1/cancel").respond(200, json={"id": "int_1"})
+    intents.cancel("int_1", cancellation_reason="requested_by_customer")
+    body = json.loads(route.calls[0].request.content)
+    uuid.UUID(body["request_id"])  # spec: request_id is required on intent actions
+    assert body["cancellation_reason"] == "requested_by_customer"
+
+
+def test_customer_update_auto_generates_request_id(api: respx.MockRouter, client: Airwallex):
+    customers = Customers(client._api)
+    route = api.post("/api/v1/pa/customers/cus_1/update").respond(200, json={"id": "cus_1"})
+    customers.update("cus_1", last_name="Byron")
+    body = json.loads(route.calls[0].request.content)
+    uuid.UUID(body["request_id"])  # spec: request_id is required on customer update

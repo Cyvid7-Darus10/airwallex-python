@@ -26,7 +26,11 @@ class WebhookEndpoints(SyncResource):
         return WebhookEndpoint.model_validate(self._client.get(f"{_BASE}/{pid(webhook_id)}"))
 
     def create(self, *, url: str, events: Sequence[str], **payload: Any) -> WebhookEndpoint:
-        """Register a webhook endpoint for the given event names."""
+        """Register a webhook endpoint for the given event names.
+
+        The API requires a ``version`` (e.g. ``version="2024-01-31"``) — pass it
+        as a keyword argument.
+        """
         body = ensure_request_id({"url": url, "events": list(events), **payload})
         return WebhookEndpoint.model_validate(self._client.post(f"{_BASE}/create", json=body))
 
@@ -57,7 +61,11 @@ class AsyncWebhookEndpoints(AsyncResource):
         return WebhookEndpoint.model_validate(await self._client.get(f"{_BASE}/{pid(webhook_id)}"))
 
     async def create(self, *, url: str, events: Sequence[str], **payload: Any) -> WebhookEndpoint:
-        """Register a webhook endpoint for the given event names."""
+        """Register a webhook endpoint for the given event names.
+
+        The API requires a ``version`` (e.g. ``version="2024-01-31"``) — pass it
+        as a keyword argument.
+        """
         body = ensure_request_id({"url": url, "events": list(events), **payload})
         return WebhookEndpoint.model_validate(await self._client.post(f"{_BASE}/create", json=body))
 
