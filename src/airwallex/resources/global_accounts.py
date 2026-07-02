@@ -4,7 +4,7 @@ from typing import Any, Optional
 
 from .._pagination import AsyncPage, SyncPage
 from ..types.global_account import GlobalAccount, GlobalAccountTransaction
-from ._base import AsyncResource, SyncResource, ensure_request_id
+from ._base import AsyncResource, SyncResource, ensure_request_id, pid
 
 _BASE = "/api/v1/global_accounts"
 
@@ -21,6 +21,7 @@ class GlobalAccounts(SyncResource):
         to_created_at: Optional[str] = None,
         page_num: int = 0,
         page_size: Optional[int] = None,
+        **extra_params: Any,
     ) -> SyncPage[GlobalAccount]:
         """List global accounts."""
         return self._paged(
@@ -35,12 +36,13 @@ class GlobalAccounts(SyncResource):
                 "to_created_at": to_created_at,
                 "page_num": page_num,
                 "page_size": page_size,
+                **extra_params,
             },
         )
 
     def retrieve(self, global_account_id: str) -> GlobalAccount:
         """Fetch a single global account by id."""
-        return GlobalAccount.model_validate(self._client.get(f"{_BASE}/{global_account_id}"))
+        return GlobalAccount.model_validate(self._client.get(f"{_BASE}/{pid(global_account_id)}"))
 
     def create(self, **payload: Any) -> GlobalAccount:
         """Open a new global account. ``request_id`` is auto-generated if omitted."""
@@ -50,12 +52,14 @@ class GlobalAccounts(SyncResource):
     def update(self, global_account_id: str, **payload: Any) -> GlobalAccount:
         """Update a global account (e.g. its nickname)."""
         return GlobalAccount.model_validate(
-            self._client.post(f"{_BASE}/update/{global_account_id}", json=payload)
+            self._client.post(f"{_BASE}/update/{pid(global_account_id)}", json=payload)
         )
 
     def close(self, global_account_id: str) -> GlobalAccount:
         """Close a global account."""
-        return GlobalAccount.model_validate(self._client.post(f"{_BASE}/{global_account_id}/close"))
+        return GlobalAccount.model_validate(
+            self._client.post(f"{_BASE}/{pid(global_account_id)}/close")
+        )
 
     def transactions(
         self,
@@ -65,16 +69,18 @@ class GlobalAccounts(SyncResource):
         to_created_at: Optional[str] = None,
         page_num: int = 0,
         page_size: Optional[int] = None,
+        **extra_params: Any,
     ) -> SyncPage[GlobalAccountTransaction]:
         """List transactions received into a global account."""
         return self._paged(
-            f"{_BASE}/{global_account_id}/transactions",
+            f"{_BASE}/{pid(global_account_id)}/transactions",
             GlobalAccountTransaction,
             {
                 "from_created_at": from_created_at,
                 "to_created_at": to_created_at,
                 "page_num": page_num,
                 "page_size": page_size,
+                **extra_params,
             },
         )
 
@@ -91,6 +97,7 @@ class AsyncGlobalAccounts(AsyncResource):
         to_created_at: Optional[str] = None,
         page_num: int = 0,
         page_size: Optional[int] = None,
+        **extra_params: Any,
     ) -> AsyncPage[GlobalAccount]:
         """List global accounts."""
         return await self._paged(
@@ -105,12 +112,15 @@ class AsyncGlobalAccounts(AsyncResource):
                 "to_created_at": to_created_at,
                 "page_num": page_num,
                 "page_size": page_size,
+                **extra_params,
             },
         )
 
     async def retrieve(self, global_account_id: str) -> GlobalAccount:
         """Fetch a single global account by id."""
-        return GlobalAccount.model_validate(await self._client.get(f"{_BASE}/{global_account_id}"))
+        return GlobalAccount.model_validate(
+            await self._client.get(f"{_BASE}/{pid(global_account_id)}")
+        )
 
     async def create(self, **payload: Any) -> GlobalAccount:
         """Open a new global account. ``request_id`` is auto-generated if omitted."""
@@ -120,13 +130,13 @@ class AsyncGlobalAccounts(AsyncResource):
     async def update(self, global_account_id: str, **payload: Any) -> GlobalAccount:
         """Update a global account (e.g. its nickname)."""
         return GlobalAccount.model_validate(
-            await self._client.post(f"{_BASE}/update/{global_account_id}", json=payload)
+            await self._client.post(f"{_BASE}/update/{pid(global_account_id)}", json=payload)
         )
 
     async def close(self, global_account_id: str) -> GlobalAccount:
         """Close a global account."""
         return GlobalAccount.model_validate(
-            await self._client.post(f"{_BASE}/{global_account_id}/close")
+            await self._client.post(f"{_BASE}/{pid(global_account_id)}/close")
         )
 
     async def transactions(
@@ -137,15 +147,17 @@ class AsyncGlobalAccounts(AsyncResource):
         to_created_at: Optional[str] = None,
         page_num: int = 0,
         page_size: Optional[int] = None,
+        **extra_params: Any,
     ) -> AsyncPage[GlobalAccountTransaction]:
         """List transactions received into a global account."""
         return await self._paged(
-            f"{_BASE}/{global_account_id}/transactions",
+            f"{_BASE}/{pid(global_account_id)}/transactions",
             GlobalAccountTransaction,
             {
                 "from_created_at": from_created_at,
                 "to_created_at": to_created_at,
                 "page_num": page_num,
                 "page_size": page_size,
+                **extra_params,
             },
         )

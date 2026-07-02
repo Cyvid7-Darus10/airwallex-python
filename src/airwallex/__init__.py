@@ -8,7 +8,8 @@ Quickstart::
     balances = client.balances.current()
 """
 
-from . import webhooks
+from . import types, webhooks
+from ._constants import Environment
 from ._errors import (
     AirwallexError,
     APIConnectionError,
@@ -39,6 +40,7 @@ __all__ = [
     "AuthenticationError",
     "BadRequestError",
     "ConflictError",
+    "Environment",
     "NotFoundError",
     "PermissionDeniedError",
     "RateLimitError",
@@ -47,5 +49,6 @@ __all__ = [
     "WebhookEvent",
     "WebhookSignatureError",
     "__version__",
+    "types",
     "webhooks",
 ]

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Optional
 
 from .._pagination import AsyncPage, SyncPage
 from ..types.balance import Balance, BalanceHistoryItem
@@ -24,6 +24,7 @@ class Balances(SyncResource):
         to_post_at: Optional[str] = None,
         page_num: int = 0,
         page_size: Optional[int] = None,
+        **extra_params: Any,
     ) -> SyncPage[BalanceHistoryItem]:
         """List ledger movements, newest first."""
         return self._paged(
@@ -35,6 +36,7 @@ class Balances(SyncResource):
                 "to_post_at": to_post_at,
                 "page_num": page_num,
                 "page_size": page_size,
+                **extra_params,
             },
         )
 
@@ -53,6 +55,7 @@ class AsyncBalances(AsyncResource):
         to_post_at: Optional[str] = None,
         page_num: int = 0,
         page_size: Optional[int] = None,
+        **extra_params: Any,
     ) -> AsyncPage[BalanceHistoryItem]:
         """List ledger movements, newest first."""
         return await self._paged(
@@ -64,5 +67,6 @@ class AsyncBalances(AsyncResource):
                 "to_post_at": to_post_at,
                 "page_num": page_num,
                 "page_size": page_size,
+                **extra_params,
             },
         )

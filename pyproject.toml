@@ -1,9 +1,10 @@
 [project]
 name = "airwallex"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Unofficial Python SDK for the Airwallex API — payouts, FX, global accounts, and more."
 readme = "README.md"
-license = { text = "MIT" }
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [{ name = "Cyrus David Pastelero", email = "claudeuser@pastelero.ph" }]
 requires-python = ">=3.9"
 dependencies = [
@@ -14,7 +15,6 @@ keywords = ["airwallex", "payments", "payouts", "fx", "fintech", "api", "sdk"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.9",
@@ -31,6 +31,10 @@ Homepage = "https://github.com/Cyvid7-Darus10/airwallex-python"
 Repository = "https://github.com/Cyvid7-Darus10/airwallex-python"
 Documentation = "https://github.com/Cyvid7-Darus10/airwallex-python#readme"
 Changelog = "https://github.com/Cyvid7-Darus10/airwallex-python/blob/main/CHANGELOG.md"
+Issues = "https://github.com/Cyvid7-Darus10/airwallex-python/issues"
+
+[tool.hatch.version]
+path = "src/airwallex/_version.py"
 
 [dependency-groups]
 dev = [

@@ -5,10 +5,10 @@ from typing import Any, Optional
 from .._models import clean_params
 from .._pagination import AsyncPage, SyncPage
 from ..types.conversion import Conversion, RateQuote
-from ._base import AsyncResource, SyncResource, ensure_request_id
+from ._base import AsyncResource, SyncResource, ensure_request_id, pid
 
 _BASE = "/api/v1/conversions"
-_RATES_QUOTE = "/api/v1/rates/quote"
+_RATES_CURRENT = "/api/v1/fx/rates/current"
 
 
 class Conversions(SyncResource):
@@ -23,6 +23,7 @@ class Conversions(SyncResource):
         to_created_at: Optional[str] = None,
         page_num: int = 0,
         page_size: Optional[int] = None,
+        **extra_params: Any,
     ) -> SyncPage[Conversion]:
         """List FX conversions."""
         return self._paged(
@@ -37,12 +38,13 @@ class Conversions(SyncResource):
                 "to_created_at": to_created_at,
                 "page_num": page_num,
                 "page_size": page_size,
+                **extra_params,
             },
         )
 
     def retrieve(self, conversion_id: str) -> Conversion:
         """Fetch a single conversion by id."""
-        return Conversion.model_validate(self._client.get(f"{_BASE}/{conversion_id}"))
+        return Conversion.model_validate(self._client.get(f"{_BASE}/{pid(conversion_id)}"))
 
     def create(self, **payload: Any) -> Conversion:
         """Execute an FX conversion between wallet currencies.
@@ -60,26 +62,30 @@ class Conversions(SyncResource):
 
 
 class Rates(SyncResource):
-    def quote(
+    def current(
         self,
         *,
-        buy_currency: Optional[str] = None,
-        sell_currency: Optional[str] = None,
+        buy_currency: str,
+        sell_currency: str,
         buy_amount: Optional[float] = None,
         sell_amount: Optional[float] = None,
-        settlement_date: Optional[str] = None,
+        conversion_date: Optional[str] = None,
     ) -> RateQuote:
-        """Get an indicative FX rate (no funds move)."""
+        """Get the current indicative FX rate (no funds move).
+
+        Specify at most one of ``buy_amount`` / ``sell_amount``; Airwallex
+        defaults to a notional amount of 10,000 when neither is given.
+        """
         params = clean_params(
             {
                 "buy_currency": buy_currency,
                 "sell_currency": sell_currency,
                 "buy_amount": buy_amount,
                 "sell_amount": sell_amount,
-                "settlement_date": settlement_date,
+                "conversion_date": conversion_date,
             }
         )
-        return RateQuote.model_validate(self._client.get(_RATES_QUOTE, params=params))
+        return RateQuote.model_validate(self._client.get(_RATES_CURRENT, params=params))
 
 
 class AsyncConversions(AsyncResource):
@@ -94,6 +100,7 @@ class AsyncConversions(AsyncResource):
         to_created_at: Optional[str] = None,
         page_num: int = 0,
         page_size: Optional[int] = None,
+        **extra_params: Any,
     ) -> AsyncPage[Conversion]:
         """List FX conversions."""
         return await self._paged(
@@ -108,12 +115,13 @@ class AsyncConversions(AsyncResource):
                 "to_created_at": to_created_at,
                 "page_num": page_num,
                 "page_size": page_size,
+                **extra_params,
             },
         )
 
     async def retrieve(self, conversion_id: str) -> Conversion:
         """Fetch a single conversion by id."""
-        return Conversion.model_validate(await self._client.get(f"{_BASE}/{conversion_id}"))
+        return Conversion.model_validate(await self._client.get(f"{_BASE}/{pid(conversion_id)}"))
 
     async def create(self, **payload: Any) -> Conversion:
         """Execute an FX conversion. See :meth:`Conversions.create`."""
@@ -122,23 +130,23 @@ class AsyncConversions(AsyncResource):
 
 
 class AsyncRates(AsyncResource):
-    async def quote(
+    async def current(
         self,
         *,
-        buy_currency: Optional[str] = None,
-        sell_currency: Optional[str] = None,
+        buy_currency: str,
+        sell_currency: str,
         buy_amount: Optional[float] = None,
         sell_amount: Optional[float] = None,
-        settlement_date: Optional[str] = None,
+        conversion_date: Optional[str] = None,
     ) -> RateQuote:
-        """Get an indicative FX rate (no funds move)."""
+        """Get the current indicative FX rate. See :meth:`Rates.current`."""
         params = clean_params(
             {
                 "buy_currency": buy_currency,
                 "sell_currency": sell_currency,
                 "buy_amount": buy_amount,
                 "sell_amount": sell_amount,
-                "settlement_date": settlement_date,
+                "conversion_date": conversion_date,
             }
         )
-        return RateQuote.model_validate(await self._client.get(_RATES_QUOTE, params=params))
+        return RateQuote.model_validate(await self._client.get(_RATES_CURRENT, params=params))

@@ -12,7 +12,7 @@ Airwallex's only official server-side SDK is Node.js. This library brings the sa
 - **Sync and async clients** (`Airwallex` / `AsyncAirwallex`) built on [httpx](https://www.python-httpx.org/)
 - **Automatic authentication** — token fetched on first use and refreshed before expiry; no manual login calls
 - **Idempotent by default** — `request_id` is auto-generated for money-moving calls, so retries never double-pay
-- **Automatic retries** with full-jitter exponential backoff on 429/5xx/network failures (honours `Retry-After`)
+- **Automatic retries** with full-jitter exponential backoff on 408/429/5xx/network failures (honours `Retry-After`; 409 business conflicts are never retried)
 - **Typed responses** — Pydantic v2 models that are immutable and forward-compatible (unknown fields preserved, never dropped)
 - **Auto-pagination** — iterate every page with one loop
 - **Webhook signature verification** with replay protection
@@ -46,6 +46,8 @@ for balance in client.balances.current():
 
 ### Send a payout
 
+> Payouts use `/api/v1/transfers`, which requires API version 2024-01-31 or later. If your account default is older, pass `api_version="2024-01-31"` (or newer) to the client.
+
 ```python
 transfer = client.transfers.create(
     beneficiary_id="ben_abc123",
@@ -64,8 +66,8 @@ print(transfer.id, transfer.status)
 ### FX: quote and convert
 
 ```python
-quote = client.rates.quote(buy_currency="USD", sell_currency="SGD", buy_amount=1000)
-print(quote.client_rate)
+rate = client.rates.current(buy_currency="USD", sell_currency="SGD", buy_amount=1000)
+print(rate.client_rate)
 
 conversion = client.conversions.create(
     buy_currency="USD",
@@ -135,6 +137,34 @@ except APIStatusError as err:
 
 All API errors inherit from `airwallex.APIError`; network failures raise `airwallex.APIConnectionError`.
 
+### Calling endpoints the SDK doesn't wrap yet
+
+Every list method accepts extra query params as keyword arguments, and the client exposes a raw escape hatch with auth, retries, and error mapping intact:
+
+```python
+page = client.transfers.list(short_reference_id="REF123")          # extra filter
+cards = client.request("GET", "/api/v1/issuing/cards", params={"card_status": "ACTIVE"})
+```
+
+### Typed responses
+
+Response models live in `airwallex.types` and preserve unknown fields for forward compatibility:
+
+```python
+from airwallex.types import Transfer, Balance
+
+def settle(transfer: Transfer) -> None: ...
+```
+
+### Bring your own httpx client
+
+```python
+import httpx
+client = Airwallex(http_client=httpx.Client(proxy="http://proxy:3128"))
+```
+
+The SDK applies the base URL and default headers per request, so proxies and custom TLS work without extra configuration; the SDK will not close a client you own.
+
 ### Connected accounts (platforms)
 
 ```python
@@ -144,7 +174,7 @@ client = Airwallex(on_behalf_of="acct_connected_account_id")  # sets x-on-behalf
 ### Pinning an API version
 
 ```python
-client = Airwallex(api_version="2026-05-29")  # sets x-api-version on every request
+client = Airwallex(api_version="2024-08-07")  # sets x-api-version on every request
 ```
 
 ## Resources covered (v0.1)
@@ -152,10 +182,10 @@ client = Airwallex(api_version="2026-05-29")  # sets x-api-version on every requ
 | Resource | Methods |
 |---|---|
 | `client.balances` | `current`, `history` |
-| `client.transfers` | `create`, `retrieve`, `list` |
+| `client.transfers` | `create`, `retrieve`, `list`, `cancel`, `validate` |
 | `client.beneficiaries` | `create`, `retrieve`, `update`, `delete`, `list`, `validate` |
 | `client.conversions` | `create`, `retrieve`, `list` |
-| `client.rates` | `quote` |
+| `client.rates` | `current` |
 | `client.global_accounts` | `create`, `retrieve`, `update`, `close`, `list`, `transactions` |
 | `client.deposits` | `list` |
 | `client.reference` | `supported_currencies`, `settlement_accounts`, `invalid_conversion_dates` |

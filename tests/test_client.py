@@ -162,3 +162,58 @@ def test_credentials_redacted_in_reprs(client: Airwallex):
     for text in (config_repr, state_repr):
         assert "key_test" not in text
         assert "[REDACTED]" in text
+
+
+def test_http_base_url_rejected_except_localhost():
+    with pytest.raises(ValueError, match="https"):
+        Airwallex(client_id="c", api_key="k", base_url="http://evil-proxy.example.com")
+    # loopback mocks are allowed
+    with Airwallex(client_id="c", api_key="k", base_url="http://localhost:8080") as local:
+        assert local._api._config.base_url == "http://localhost:8080"
+
+
+def test_error_request_has_redacted_authorization(api: respx.MockRouter, client: Airwallex):
+    api.get("/api/v1/transfers/tra_x").respond(404, json={"message": "not found"})
+    with pytest.raises(NotFoundError) as exc_info:
+        client.transfers.retrieve("tra_x")
+    err = exc_info.value
+    assert err.request is not None
+    assert err.request.headers["authorization"] == "[REDACTED]"
+    assert err.response.request.headers["authorization"] == "[REDACTED]"
+
+
+def test_config_and_state_pickle_safe(client: Airwallex):
+    import pickle
+
+    dumped = pickle.dumps(client._api._config)
+    assert b"key_test" not in dumped
+    state = client._api._token_manager._state.__getstate__()
+    assert state["api_key"] == "[REDACTED]"
+
+
+def test_custom_http_client_gets_base_url_and_headers(api: respx.MockRouter):
+    own_http = httpx.Client()
+    client = Airwallex(
+        client_id="c",
+        api_key="k",
+        environment="demo",
+        on_behalf_of="acct_777",
+        http_client=own_http,
+    )
+    route = api.get("/api/v1/balances/current").respond(200, json=[])
+    client.balances.current()
+    request = route.calls[0].request
+    assert request.url.host == "api-demo.airwallex.com"
+    assert request.headers["x-on-behalf-of"] == "acct_777"
+    assert request.headers["user-agent"].startswith("airwallex-python/")
+    client.close()
+    assert not own_http.is_closed  # SDK must not close a client it doesn't own
+    own_http.close()
+
+
+def test_list_accepts_extra_query_params(api: respx.MockRouter, client: Airwallex):
+    route = api.get("/api/v1/transfers").respond(200, json={"has_more": False, "items": []})
+    client.transfers.list(status="PAID", short_reference_id="REF123")
+    params = route.calls[0].request.url.params
+    assert params["short_reference_id"] == "REF123"
+    assert params["status"] == "PAID"

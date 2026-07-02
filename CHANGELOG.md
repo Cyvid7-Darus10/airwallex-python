@@ -4,15 +4,16 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres
 to [Semantic Versioning](https://semver.org/).
 
-## [0.1.0] - Unreleased
+## [0.1.0] - 2026-07-02
 
 ### Added
 
 - Sync (`Airwallex`) and async (`AsyncAirwallex`) clients built on httpx.
 - Automatic bearer-token authentication with pre-expiry refresh and single
   re-login on 401.
-- Automatic retries with full-jitter exponential backoff on 408/409/429/5xx and
-  network errors, honouring `Retry-After`.
+- Automatic retries with full-jitter exponential backoff on 408/429/5xx and
+  network errors, honouring `Retry-After` (both seconds and HTTP-date forms).
+  409 conflicts are never retried and surface as `ConflictError`.
 - Auto-generated `request_id` on money-moving calls for idempotency.
 - Resources: balances, transfers (payouts), beneficiaries, conversions, rates,
   global accounts, deposits, reference data, webhook endpoint management.

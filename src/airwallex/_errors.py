@@ -24,13 +24,24 @@ class AirwallexError(Exception):
     """Base class for every error raised by this SDK."""
 
 
+def _scrub_auth(request: Optional[httpx.Request]) -> Optional[httpx.Request]:
+    """Redact the Authorization header so exceptions never carry a live token.
+
+    Errors are routinely logged and shipped to monitoring services; the
+    attached request must be safe to serialise.
+    """
+    if request is not None and "authorization" in request.headers:
+        request.headers["Authorization"] = "[REDACTED]"
+    return request
+
+
 class APIError(AirwallexError):
     """Base class for errors that occur while talking to the Airwallex API."""
 
     def __init__(self, message: str, *, request: Optional[httpx.Request] = None) -> None:
         super().__init__(message)
         self.message = message
-        self.request = request
+        self.request = _scrub_auth(request)
 
 
 class APIConnectionError(APIError):

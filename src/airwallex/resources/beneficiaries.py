@@ -4,7 +4,7 @@ from typing import Any, Optional
 
 from .._pagination import AsyncPage, SyncPage
 from ..types.beneficiary import Beneficiary
-from ._base import AsyncResource, SyncResource
+from ._base import AsyncResource, SyncResource, pid
 
 _BASE = "/api/v1/beneficiaries"
 
@@ -22,6 +22,7 @@ class Beneficiaries(SyncResource):
         to_date: Optional[str] = None,
         page_num: int = 0,
         page_size: Optional[int] = None,
+        **extra_params: Any,
     ) -> SyncPage[Beneficiary]:
         """List saved beneficiaries, optionally filtered."""
         return self._paged(
@@ -37,12 +38,13 @@ class Beneficiaries(SyncResource):
                 "to_date": to_date,
                 "page_num": page_num,
                 "page_size": page_size,
+                **extra_params,
             },
         )
 
     def retrieve(self, beneficiary_id: str) -> Beneficiary:
         """Fetch a single beneficiary by id."""
-        return Beneficiary.model_validate(self._client.get(f"{_BASE}/{beneficiary_id}"))
+        return Beneficiary.model_validate(self._client.get(f"{_BASE}/{pid(beneficiary_id)}"))
 
     def create(self, **payload: Any) -> Beneficiary:
         """Save a new beneficiary.
@@ -55,12 +57,12 @@ class Beneficiaries(SyncResource):
     def update(self, beneficiary_id: str, **payload: Any) -> Beneficiary:
         """Update an existing beneficiary."""
         return Beneficiary.model_validate(
-            self._client.post(f"{_BASE}/update/{beneficiary_id}", json=payload)
+            self._client.post(f"{_BASE}/update/{pid(beneficiary_id)}", json=payload)
         )
 
     def delete(self, beneficiary_id: str) -> None:
         """Delete a beneficiary."""
-        self._client.post(f"{_BASE}/delete/{beneficiary_id}")
+        self._client.post(f"{_BASE}/delete/{pid(beneficiary_id)}")
 
     def validate(self, **payload: Any) -> Any:
         """Validate beneficiary details without saving them.
@@ -83,6 +85,7 @@ class AsyncBeneficiaries(AsyncResource):
         to_date: Optional[str] = None,
         page_num: int = 0,
         page_size: Optional[int] = None,
+        **extra_params: Any,
     ) -> AsyncPage[Beneficiary]:
         """List saved beneficiaries, optionally filtered."""
         return await self._paged(
@@ -98,12 +101,13 @@ class AsyncBeneficiaries(AsyncResource):
                 "to_date": to_date,
                 "page_num": page_num,
                 "page_size": page_size,
+                **extra_params,
             },
         )
 
     async def retrieve(self, beneficiary_id: str) -> Beneficiary:
         """Fetch a single beneficiary by id."""
-        return Beneficiary.model_validate(await self._client.get(f"{_BASE}/{beneficiary_id}"))
+        return Beneficiary.model_validate(await self._client.get(f"{_BASE}/{pid(beneficiary_id)}"))
 
     async def create(self, **payload: Any) -> Beneficiary:
         """Save a new beneficiary. See :meth:`Beneficiaries.create`."""
@@ -112,12 +116,12 @@ class AsyncBeneficiaries(AsyncResource):
     async def update(self, beneficiary_id: str, **payload: Any) -> Beneficiary:
         """Update an existing beneficiary."""
         return Beneficiary.model_validate(
-            await self._client.post(f"{_BASE}/update/{beneficiary_id}", json=payload)
+            await self._client.post(f"{_BASE}/update/{pid(beneficiary_id)}", json=payload)
         )
 
     async def delete(self, beneficiary_id: str) -> None:
         """Delete a beneficiary."""
-        await self._client.post(f"{_BASE}/delete/{beneficiary_id}")
+        await self._client.post(f"{_BASE}/delete/{pid(beneficiary_id)}")
 
     async def validate(self, **payload: Any) -> Any:
         """Validate beneficiary details without saving them."""
