@@ -20,7 +20,10 @@ DEFAULT_MAX_RETRIES = 2
 DEFAULT_INITIAL_RETRY_DELAY_SECONDS = 0.5
 DEFAULT_MAX_RETRY_DELAY_SECONDS = 8.0
 
-RETRYABLE_STATUS_CODES = frozenset({408, 409, 429, 500, 502, 503, 504})
+# 409 is deliberately absent: Airwallex uses it for business conflicts
+# (duplicate request_id, invalid state transitions) that must surface to the
+# caller as ConflictError, never be silently retried.
+RETRYABLE_STATUS_CODES = frozenset({408, 429, 500, 502, 503, 504})
 
 # Webhook signatures older than this are rejected to limit replay attacks.
 DEFAULT_WEBHOOK_TOLERANCE_SECONDS = 300

@@ -52,6 +52,9 @@ class _TokenState:
         self.token: Optional[str] = None
         self.expires_at: float = 0.0
 
+    def __repr__(self) -> str:
+        return f"_TokenState(client_id={self.client_id!r}, api_key='[REDACTED]')"
+
     def is_fresh(self) -> bool:
         now = dt.datetime.now(dt.timezone.utc).timestamp()
         return self.token is not None and now < self.expires_at - TOKEN_REFRESH_LEEWAY_SECONDS
@@ -86,9 +89,9 @@ class TokenManager:
 
     def get_token(self, http: httpx.Client) -> str:
         with self._lock:
-            if self._state.is_fresh():
-                assert self._state.token is not None
-                return self._state.token
+            token = self._state.token
+            if token is not None and self._state.is_fresh():
+                return token
             response = http.post(LOGIN_PATH, headers=self._state.login_headers())
             return self._state.store(response)
 
@@ -106,11 +109,15 @@ class AsyncTokenManager:
 
     async def get_token(self, http: httpx.AsyncClient) -> str:
         async with self._lock:
-            if self._state.is_fresh():
-                assert self._state.token is not None
-                return self._state.token
+            token = self._state.token
+            if token is not None and self._state.is_fresh():
+                return token
             response = await http.post(LOGIN_PATH, headers=self._state.login_headers())
             return self._state.store(response)
 
     def invalidate(self) -> None:
+        # Safe without the asyncio lock: the event loop is single-threaded and
+        # get_token() never awaits between reading the token and returning it,
+        # so invalidation cannot interleave with a read. At worst a concurrent
+        # login re-runs once.
         self._state.invalidate()
