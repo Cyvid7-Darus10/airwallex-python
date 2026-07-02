@@ -83,6 +83,41 @@ conversion = client.conversions.create(
 )
 ```
 
+### Accept a payment
+
+```python
+intent = client.payment_intents.create(
+    amount=25.00,
+    currency="USD",
+    merchant_order_id="order_42",
+)
+confirmed = client.payment_intents.confirm(intent.id, payment_method={"type": "card", "card": {...}})
+refund = client.refunds.create(payment_intent_id=intent.id, amount=5.00)
+```
+
+### Issue a card
+
+```python
+cardholder = client.issuing_cardholders.create(
+    email="employee@example.com",
+    individual={"name": {"first_name": "Ada", "last_name": "Lovelace"}},
+    type="INDIVIDUAL",
+)
+card = client.issuing_cards.create(
+    cardholder_id=cardholder.cardholder_id,
+    form_factor="VIRTUAL",
+    created_by="Ada Lovelace",
+    program={"purpose": "COMMERCIAL"},
+)
+```
+
+### Test flows in the sandbox
+
+```python
+client.simulation.create_deposit(amount=1000, currency="USD")   # demo environment only
+client.simulation.transition_transfer("tra_123", next_status="PAID")
+```
+
 ### Auto-pagination
 
 ```python
@@ -149,7 +184,7 @@ Every list method accepts extra query params as keyword arguments, and the clien
 
 ```python
 page = client.transfers.list(short_reference_id="REF123")          # extra filter
-cards = client.request("GET", "/api/v1/issuing/cards", params={"card_status": "ACTIVE"})
+disputes = client.request("GET", "/api/v1/pa/payment_disputes", params={"status": "OPEN"})
 ```
 
 ### Typed responses
@@ -223,7 +258,7 @@ This SDK is **beta** software:
 - The wrapped endpoints are grounded in Airwallex's published API spec and covered by tests, but they have not yet been exercised against every account configuration.
 - Semantic versioning applies: breaking changes only in minor versions while `0.x`, and patch releases never change behavior.
 - Response models tolerate unknown fields, so new Airwallex API versions won't break parsing.
-- Test in the `demo` environment before pointing at production, and pin the version in your dependency file (e.g. `airwallex==0.1.0`).
+- Test in the `demo` environment before pointing at production, and pin the version in your dependency file (e.g. `airwallex==0.2.0`).
 
 ## Development
 
