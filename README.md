@@ -40,9 +40,9 @@ Create API credentials in the Airwallex web app under **Developer → API keys**
 from airwallex import Airwallex
 
 client = Airwallex(
-    client_id="your_client_id",   # or set AIRWALLEX_CLIENT_ID
-    api_key="your_api_key",       # or set AIRWALLEX_API_KEY
-    environment="demo",           # "production" (default) or "demo" sandbox
+    client_id="your_client_id",  # or set AIRWALLEX_CLIENT_ID
+    api_key="your_api_key",  # or set AIRWALLEX_API_KEY
+    environment="demo",  # "production" (default) or "demo" sandbox
 )
 
 # Current wallet balances
@@ -91,7 +91,9 @@ intent = client.payment_intents.create(
     currency="USD",
     merchant_order_id="order_42",
 )
-confirmed = client.payment_intents.confirm(intent.id, payment_method={"type": "card", "card": {...}})
+confirmed = client.payment_intents.confirm(
+    intent.id, payment_method={"type": "card", "card": {...}}
+)
 refund = client.refunds.create(payment_intent_id=intent.id, amount=5.00)
 ```
 
@@ -114,7 +116,7 @@ card = client.issuing_cards.create(
 ### Test flows in the sandbox
 
 ```python
-client.simulation.create_deposit(amount=1000, currency="USD")   # demo environment only
+client.simulation.create_deposit(amount=1000, currency="USD")  # demo environment only
 client.simulation.transition_transfer("tra_123", next_status="PAID")
 ```
 
@@ -132,11 +134,13 @@ for beneficiary in client.beneficiaries.list(page_size=100).auto_paging_iter():
 import asyncio
 from airwallex import AsyncAirwallex
 
+
 async def main() -> None:
     async with AsyncAirwallex(environment="demo") as client:
         page = await client.transfers.list(status="PAID")
         async for transfer in page.auto_paging_iter():
             print(transfer.id)
+
 
 asyncio.run(main())
 ```
@@ -148,10 +152,11 @@ Verify and parse incoming notifications (get the secret when you create the webh
 ```python
 from airwallex import webhooks, WebhookSignatureError
 
+
 def handle(request):  # any web framework
     try:
         event = webhooks.construct_event(
-            payload=request.body,                      # raw bytes — do not re-serialise
+            payload=request.body,  # raw bytes — do not re-serialise
             timestamp=request.headers["x-timestamp"],
             signature=request.headers["x-signature"],
             secret=WEBHOOK_SECRET,
@@ -183,7 +188,7 @@ All API errors inherit from `airwallex.APIError`; network failures raise `airwal
 Every list method accepts extra query params as keyword arguments, and the client exposes a raw escape hatch with auth, retries, and error mapping intact:
 
 ```python
-page = client.transfers.list(short_reference_id="REF123")          # extra filter
+page = client.transfers.list(short_reference_id="REF123")  # extra filter
 disputes = client.request("GET", "/api/v1/pa/payment_disputes", params={"status": "OPEN"})
 ```
 
@@ -194,6 +199,7 @@ Response models live in `airwallex.types` and preserve unknown fields for forwar
 ```python
 from airwallex.types import Transfer, Balance
 
+
 def settle(transfer: Transfer) -> None: ...
 ```
 
@@ -201,6 +207,7 @@ def settle(transfer: Transfer) -> None: ...
 
 ```python
 import httpx
+
 client = Airwallex(http_client=httpx.Client(proxy="http://proxy:3128"))
 ```
 
